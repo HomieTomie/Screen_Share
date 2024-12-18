@@ -1,114 +1,96 @@
 package com.example.display_viewer
 
-<<<<<<< HEAD
+import android.content.pm.ActivityInfo
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.widget.Button
-import androidx.appcompat.app.AppCompatActivity
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.ui.PlayerView
-
-class MainActivity : AppCompatActivity() {
-    private var player: ExoPlayer? = null
-    private var playerView: PlayerView? = null
-=======
-import android.media.MediaPlayer
-import android.net.Uri
-import android.os.Bundle
-import android.util.Log
-import android.view.View
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.widget.Button
 import android.widget.Toast
-import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
+import java.io.InputStream
+import java.net.Socket
 
 class MainActivity : AppCompatActivity() {
-    private var videoView: VideoView? = null
->>>>>>> b5d949e6eabfaf80721e2608f90cd5fb06afe0eb
-    private var connectButton: Button? = null
+
+    private lateinit var surfaceView: SurfaceView
+    private lateinit var surfaceHolder: SurfaceHolder
+    private lateinit var connectionButton: Button
+    private var isConnected = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
         setContentView(R.layout.layout)
 
-<<<<<<< HEAD
-        playerView = findViewById(R.id.playerView) // Ensure layout has PlayerView
-        connectButton = findViewById(R.id.connectButton) // Button for starting the connection
+        // Initialize views
+        surfaceView = findViewById(R.id.surfaceView)
+        surfaceHolder = surfaceView.holder
+        connectionButton = findViewById(R.id.connectionButton)
 
-        // Set up button click listener
-        connectButton?.setOnClickListener {
-            initializePlayer()
+        // Set button click listener
+        connectionButton.setOnClickListener {
+            if (!isConnected) {
+                showToast("Connecting...")
+                startStream()
+                supportActionBar?.hide()
+            }
         }
     }
 
-    private fun initializePlayer() {
-        val serverIp = "172.20.10.3"
-        val serverPort = 5005
-        val rtpUrl = "rtp://$serverIp:$serverPort"
+    private fun startStream() {
+        Thread {
+            try {
+                //DomekL 192.168.72.26
+                //TomTom 172.20.10.3
+                val socket = Socket("172.20.10.3", 5050)
+                val inputStream: InputStream = socket.getInputStream()
 
-        // Initialize ExoPlayer
-        player = ExoPlayer.Builder(this).build()
-        playerView?.player = player
+                runOnUiThread {
+                    showToast("Connected!")
+                    isConnected = true
+                    connectionButton.visibility = Button.GONE
+                }
 
-        // Add media item and prepare player
-        val mediaItem = MediaItem.fromUri(rtpUrl)
-        player?.setMediaItem(mediaItem)
-        player?.prepare()
-        player?.playWhenReady = true
+                while (true) {
+                    // Read image size from the server
+                    val sizeBuffer = ByteArray(4)
+                    if (inputStream.read(sizeBuffer) == -1) break
+                    val imageSize = java.nio.ByteBuffer.wrap(sizeBuffer).int
+
+                    // Read image data from the server
+                    val imageBuffer = ByteArray(imageSize)
+                    var bytesRead = 0
+                    while (bytesRead < imageSize) {
+                        val read = inputStream.read(imageBuffer, bytesRead, imageSize - bytesRead)
+                        if (read == -1) break
+                        bytesRead += read
+                    }
+
+                    // Decode the image data into a Bitmap
+                    val bitmap = BitmapFactory.decodeByteArray(imageBuffer, 0, imageSize)
+
+                    // Draw the Bitmap on the SurfaceView
+                    surfaceHolder.lockCanvas()?.let { canvas ->
+                        // Scale the Bitmap to match the SurfaceView dimensions
+                        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, canvas.width, canvas.height, true)
+                        canvas.drawBitmap(scaledBitmap, 0f, 0f, null)
+                        surfaceHolder.unlockCanvasAndPost(canvas)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                runOnUiThread {
+                    showToast("Failed to connect: ${e.message}")
+                    isConnected = false
+                }
+            }
+        }.start()
     }
 
-    override fun onStop() {
-        super.onStop()
-        // Release player resources
-        player?.release()
-        player = null
+    // Function to show toast messages
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }
-=======
-        // Link UI components from the layout
-        videoView = findViewById(R.id.videoView)
-        connectButton = findViewById(R.id.connectButton)
-
-        // Set up the Connect button click listener
-        if (connectButton != null) {
-            connectButton!!.setOnClickListener { v: View? -> startStreaming() }
-        } else {
-            Toast.makeText(this, "Error: Connect button not found.", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun startStreaming() {
-        // Replace with your server's IP and port
-        val serverIp = "172.20.10.8" // Server IP
-        val serverPort = 5005 // Server port
-
-        val rtpUrl = "rtp://$serverIp:$serverPort"
-
-        try {
-            val uri = Uri.parse(rtpUrl)
-            videoView!!.setVideoURI(uri)
-            videoView!!.setOnPreparedListener { mediaPlayer: MediaPlayer? ->
-                Toast.makeText(this, "Connected to stream", Toast.LENGTH_SHORT).show()
-                videoView!!.start()
-            }
-            videoView!!.setOnErrorListener { mediaPlayer: MediaPlayer?, what: Int, extra: Int ->
-                Toast.makeText(
-                    this,
-                    "Error: Unable to play the stream",
-                    Toast.LENGTH_LONG
-                ).show()
-                Log.e(
-                    "VideoView",
-                    "Error playing stream. What: $what, Extra: $extra"
-                )
-                true
-            }
-            videoView!!.requestFocus()
-            Toast.makeText(this, "Connecting to stream...", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error starting stream: " + e.message, Toast.LENGTH_LONG).show()
-            Log.e("VideoView", "Exception: " + e.message, e)
-        }
-    }
-}
->>>>>>> b5d949e6eabfaf80721e2608f90cd5fb06afe0eb
