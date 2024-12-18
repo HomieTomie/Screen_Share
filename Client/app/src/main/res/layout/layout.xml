@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<<<<<<< HEAD
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+=======
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+>>>>>>> b5d949e6eabfaf80721e2608f90cd5fb06afe0eb
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
 
+<<<<<<< HEAD
     <!-- ExoPlayer's PlayerView -->
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/playerView"
@@ -20,3 +27,19 @@
         android:layout_centerHorizontal="true"
         android:layout_margin="16dp" />
 </RelativeLayout>
+=======
+    <Button
+        android:id="@+id/connectButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Connect to Stream"
+        android:layout_marginBottom="16dp" />
+
+    <VideoView
+        android:id="@+id/videoView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+</LinearLayout>
+>>>>>>> b5d949e6eabfaf80721e2608f90cd5fb06afe0eb
