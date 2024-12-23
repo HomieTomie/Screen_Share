@@ -9,8 +9,9 @@ import android.view.SurfaceView
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.io.InputStream
-import java.net.Socket
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
 
 class MainActivity : AppCompatActivity() {
 
@@ -18,10 +19,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var surfaceHolder: SurfaceHolder
     private lateinit var connectionButton: Button
     private var isConnected = false
+    private val serverAddress = "192.168.1.100" // IP address of the server
+    private val serverPort = 1234 // Port number used in the server-side UDP stream
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         setContentView(R.layout.layout)
 
         // Initialize views
@@ -42,10 +45,8 @@ class MainActivity : AppCompatActivity() {
     private fun startStream() {
         Thread {
             try {
-                //DomekL 192.168.72.26
-                //TomTom 172.20.10.3
-                val socket = Socket("172.20.10.3", 5050)
-                val inputStream: InputStream = socket.getInputStream()
+                val socket = DatagramSocket(serverPort)
+                socket.connect(InetAddress.getByName(serverAddress), serverPort)
 
                 runOnUiThread {
                     showToast("Connected!")
@@ -53,23 +54,17 @@ class MainActivity : AppCompatActivity() {
                     connectionButton.visibility = Button.GONE
                 }
 
-                while (true) {
-                    // Read image size from the server
-                    val sizeBuffer = ByteArray(4)
-                    if (inputStream.read(sizeBuffer) == -1) break
-                    val imageSize = java.nio.ByteBuffer.wrap(sizeBuffer).int
+                val buffer = ByteArray(65535) // Buffer to hold the incoming data packets
 
-                    // Read image data from the server
-                    val imageBuffer = ByteArray(imageSize)
-                    var bytesRead = 0
-                    while (bytesRead < imageSize) {
-                        val read = inputStream.read(imageBuffer, bytesRead, imageSize - bytesRead)
-                        if (read == -1) break
-                        bytesRead += read
-                    }
+                while (true) {
+                    val packet = DatagramPacket(buffer, buffer.size)
+                    socket.receive(packet) // Receive the UDP packet
+
+                    // Assuming we are receiving video frames (H.264 encoded)
+                    val imageData = packet.data.copyOf(packet.length)
 
                     // Decode the image data into a Bitmap
-                    val bitmap = BitmapFactory.decodeByteArray(imageBuffer, 0, imageSize)
+                    val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
 
                     // Draw the Bitmap on the SurfaceView
                     surfaceHolder.lockCanvas()?.let { canvas ->
